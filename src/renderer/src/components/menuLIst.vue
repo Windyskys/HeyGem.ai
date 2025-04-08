@@ -13,23 +13,26 @@
 </template>
 <script setup>
 import { useRouter, useRoute } from 'vue-router'
-import { reactive, watch, computed } from 'vue'
+import { reactive, watch, onMounted } from 'vue'
 import onIcon from '../assets/images/home/menu/onHome.svg'
 import activeIcon from '../assets/images/home/menu/active.svg'
 import offIcon from '../assets/images/home/menu/offHome.svg'
 import onMediaToolIcon from '../assets/images/home/menu/onMediaTool.svg'
 import offMediaToolIcon from '../assets/images/home/menu/offMediaTool.svg'
 import { useI18n } from 'vue-i18n'
+
 const { t, locale } = useI18n()
 const unRoute = useRoute()
 const router = useRouter()
+
+// 初始化菜单项
 const obj = [
   {
     key: 'common.menu.text',
     name: t('common.menu.text'),
     onIcon,
     offIcon,
-    active: true,
+    active: false,
     path: '/home'
   },
   {
@@ -40,35 +43,39 @@ const obj = [
     active: false,
     path: '/media-tool'
   }
-  /* {
-      name: "账号",
-      onIcon,
-      offIcon,
-      active: true,
-      path: "/account",
-    }, */
 ]
+
 const state = reactive({
   menuList: obj
 })
 
+// 初始化时检查当前路由
+onMounted(() => {
+  const currentPath = unRoute.path
+  state.menuList.forEach((el) => {
+    // 使用startsWith更精确地匹配路径前缀
+    el.active = currentPath === el.path || (el.path !== '/' && currentPath.startsWith(el.path))
+  })
+})
+
+// 监听语言变化
 watch(locale, () => {
-  state.menuList.forEach((el, index) => {
+  state.menuList.forEach((el) => {
     el.name = t(el.key)
   })
 })
+
+// 监听路由变化
 watch(
   () => unRoute.path,
   (newPath) => {
     state.menuList.forEach((el) => {
-      if (newPath.includes(el.path)) {
-        el.active = true
-      } else {
-        el.active = false
-      }
+      // 使用startsWith更精确地匹配路径前缀
+      el.active = newPath === el.path || (el.path !== '/' && newPath.startsWith(el.path))
     })
   }
 )
+
 const handleClick = (item) => {
   router.push(item.path)
 }
@@ -82,6 +89,7 @@ const handleClick = (item) => {
   top: 0;
   padding-top: 60px;
   height: 100%;
+  
   li {
     list-style: none;
     display: flex;
@@ -90,19 +98,26 @@ const handleClick = (item) => {
     align-items: center;
     justify-content: center;
     margin-top: 20px;
+    
     .content-body {
       position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      
       .icon {
         width: 44px;
         height: 44px;
         display: block;
       }
+      
       .active-icon {
         position: absolute;
         display: block;
         top: 8px;
         left: -16px;
       }
+      
       .text {
         text-align: center;
         font-family: PingFang SC, PingFang SC;
