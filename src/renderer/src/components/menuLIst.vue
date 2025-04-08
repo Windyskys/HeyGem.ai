@@ -17,6 +17,8 @@ import { reactive, watch, computed } from 'vue'
 import onIcon from '../assets/images/home/menu/onHome.svg'
 import activeIcon from '../assets/images/home/menu/active.svg'
 import offIcon from '../assets/images/home/menu/offHome.svg'
+import onMediaToolIcon from '../assets/images/home/menu/onMediaTool.svg'
+import offMediaToolIcon from '../assets/images/home/menu/offMediaTool.svg'
 import { useI18n } from 'vue-i18n'
 const { t, locale } = useI18n()
 const unRoute = useRoute()
@@ -29,6 +31,14 @@ const obj = [
     offIcon,
     active: true,
     path: '/home'
+  },
+  {
+    key: 'common.menu.mediaTool',
+    name: t('common.menu.mediaTool'),
+    onIcon: onMediaToolIcon,
+    offIcon: offMediaToolIcon,
+    active: false,
+    path: '/media-tool'
   }
   /* {
       name: "账号",
