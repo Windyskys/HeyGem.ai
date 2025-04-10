@@ -7,8 +7,7 @@ import { Button } from 'tdesign-vue-next'
 // 中文翻译
 export const commonZh = {
   menu: {
-    text: '首页',
-    mediaTool: '自媒体工具'
+    text: '首页'
   },
   header: {
     minimizeText: '最小化',
@@ -142,18 +141,13 @@ export const commonZh = {
       languageEnText: '英文',
       languageZhText: '中文'
     }
-  },
-  mediaTools: {
-    title: '自媒体对标工具',
-    description: '这里将提供对抖音、小红书等平台的内容分析工具'
   }
 }
 
 // 英文翻译
 export const commonEn = {
   menu: {
-    text: 'Home',
-    mediaTool: 'Media Tools'
+    text: 'Home'
   },
   header: {
     minimizeText: 'Minimize',
@@ -188,7 +182,7 @@ export const commonEn = {
     makeFailedText: 'Failed',
     draftsText: 'Drafts',
     underProduction: 'Generating, please wait for a moment.',
-    queuing: 'In the queue, please wait for a moment.',
+    queuing: 'In the queue, please wait  for a moment.',
     emptyText: "You don't have any video works yet",
     emptyLinkRouteText: 'click here',
     emptyRightText: 'to Create Video.'
@@ -287,9 +281,5 @@ export const commonEn = {
       languageEnText: 'English',
       languageZhText: 'Chinese'
     }
-  },
-  mediaTools: {
-    title: 'Media Benchmarking Tools',
-    description: 'Tools for analyzing content on platforms like TikTok and Xiaohongshu'
   }
 }
