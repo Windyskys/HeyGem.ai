@@ -3,10 +3,11 @@ import { preprocessAndTran, makeAudio as makeAudioApi } from '../api/tts.js'
 import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
-import { assetPath } from '../config/config.js'
+import { assetPath, remoteServerConfig } from '../config/config.js'
 import log from '../logger.js'
 import { ipcMain } from 'electron'
 import dayjs from 'dayjs'
+import { uploadFile } from '../api/request.js'
 
 const MODEL_NAME = 'voice'
 
@@ -16,9 +17,28 @@ export function getAllTimbre() {
 
 export async function train(path, lang = 'zh') {
   path = path.replace(/\\/g, '/') // 将路径中的\替换为/
+  
+  // 如果启用了远程服务器，先上传音频文件
+  let remotePath = path;
+  if (remoteServerConfig.enabled) {
+    try {
+      log.debug('Start uploading training audio files to the remote server...');
+      const uploadResult = await uploadFile(
+        path.join(assetPath.ttsRoot, path), 
+        'tts', 
+        'origin_audio'
+      );
+      remotePath = uploadResult.remotePath;
+      log.debug('Training audio files uploaded successfully:', remotePath);
+    } catch (error) {
+      log.error('Failed to upload training audio files:', error);
+      throw new Error(`Failed to upload training audio files: ${error.message}`);
+    }
+  }
+  
   const res = await preprocessAndTran({
     format: path.split('.').pop(),
-    reference_audio: path,
+    reference_audio: remotePath,
     lang
   })
   log.debug('~ train ~ res:', res)
@@ -40,6 +60,20 @@ export function copyAudio4Video(filePath) {
   const fileName = dayjs().format('YYYYMMDDHHmmssSSS') + path.extname(filePath)
   const targetPath = path.join(targetDir, fileName)
   fs.copyFileSync(filePath, targetPath)
+  
+  // 如果启用了远程服务器，上传复制的音频文件
+  if (remoteServerConfig.enabled) {
+    try {
+      log.debug('Start uploading copied audio file to the remote server...');
+      uploadFile(targetPath, 'tts', 'products').then(uploadResult => {
+        log.debug('Copied audio file uploaded successfully:', uploadResult.remotePath);
+      });
+    } catch (error) {
+      log.error('Failed to upload copied audio file:', error);
+      // 不抛出异常，继续后续处理
+    }
+  }
+  
   return fileName
 }
 

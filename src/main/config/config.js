@@ -4,9 +4,23 @@ import os from 'os'
 const isDev = process.env.NODE_ENV === 'development'
 const isWin = process.platform === 'win32'
 
+// 添加远程服务器配置 - 您可以根据实际需求修改这些值
+export const remoteServerConfig = {
+  enabled: true, // 默认不启用，需要时手动改为true
+  serverAddress: 'http://192.168.103.103', // 替换为您的Ubuntu服务器IP
+  // 根据实际部署修改以下路径
+  fileUploadPath: '/upload',
+  fileDownloadPath: '/download',
+  // 根据Docker挂载路径设置
+  paths: {
+    tts: '/code/data',
+    face2face: '/code/data'
+  }
+}
+
 export const serviceUrl = {
-  face2face: isDev ? 'http://192.168.4.204:8383/easy' : 'http://127.0.0.1:8383/easy',
-  tts: isDev ? 'http://192.168.4.204:18180' : 'http://127.0.0.1:18180'
+  face2face: isDev ? 'http://192.168.103.103/easy' : 'http://192.168.103.103/easy',
+  tts: isDev ? 'http://192.168.103.103:18180' : 'http://192.168.103.103:18180'
 }
 
 export const assetPath = {

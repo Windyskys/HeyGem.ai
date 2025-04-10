@@ -5,9 +5,11 @@ import dayjs from 'dayjs'
 import { isEmpty } from 'lodash'
 import { insert, selectPage, count, selectByID, remove as deleteModel } from '../dao/f2f-model.js'
 import { train as trainVoice } from './voice.js'
-import { assetPath } from '../config/config.js'
+import { assetPath, remoteServerConfig } from '../config/config.js'
 import log from '../logger.js'
 import { extractAudio } from '../util/ffmpeg.js'
+import { uploadFile } from '../api/request.js'
+
 const MODEL_NAME = 'model'
 
 /**
@@ -16,17 +18,33 @@ const MODEL_NAME = 'model'
  * @param {string} videoPath 模特视频路径
  * @returns
  */
-function addModel(modelName, videoPath) {
+async function addModel(modelName, videoPath) {
   if (!fs.existsSync(assetPath.model)) {
     fs.mkdirSync(assetPath.model, {
       recursive: true
     })
   }
+  
+  // 如果启用了远程服务器，先上传文件到服务器
+  let remoteVideoPath = videoPath;
+  if (remoteServerConfig.enabled) {
+    try {
+      log.debug('Start uploading model video file to remote server...');
+      const uploadResult = await uploadFile(videoPath, 'face2face', 'models');
+      remoteVideoPath = uploadResult.remotePath;
+      log.debug('Model video file uploaded successfully:', remoteVideoPath);
+    } catch (error) {
+      log.error('Failed to upload model video file:', error);
+      throw new Error(`Failed to upload model video file: ${error.message}`);
+    }
+  }
+  
   // copy video to model video path
   const extname = path.extname(videoPath)
   const modelFileName = dayjs().format('YYYYMMDDHHmmssSSS') + extname
   const modelPath = path.join(assetPath.model, modelFileName)
 
+  // 使用本地文件路径复制文件
   fs.copyFileSync(videoPath, modelPath)
 
   // 用ffmpeg分离音频
@@ -36,7 +54,22 @@ function addModel(modelName, videoPath) {
     })
   }
   const audioPath = path.join(assetPath.ttsTrain, modelFileName.replace(extname, '.wav'))
-  return extractAudio(modelPath, audioPath).then(() => {
+  
+  return extractAudio(modelPath, audioPath).then(async () => {
+    // 如果启用了远程服务器，上传分离出的音频文件
+    let remoteAudioPath = audioPath;
+    if (remoteServerConfig.enabled) {
+      try {
+        log.debug('Start uploading model audio file to remote server...');
+        const uploadResult = await uploadFile(audioPath, 'tts', 'origin_audio');
+        remoteAudioPath = uploadResult.remotePath;
+        log.debug('Model audio file uploaded successfully:', remoteAudioPath);
+      } catch (error) {
+        log.error('Failed to upload model audio file:', error);
+        throw new Error(`Failed to upload model audio file: ${error.message}`);
+      }
+    }
+    
     // 训练语音模型
     const relativeAudioPath = path.relative(assetPath.ttsRoot, audioPath)
     if (process.env.NODE_ENV === 'development') {

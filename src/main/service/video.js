@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import path from 'path'
 import fs from 'fs'
 import { isEmpty } from 'lodash'
-import { assetPath } from '../config/config.js'
+import { assetPath, remoteServerConfig } from '../config/config.js'
 import { selectPage,selectByStatus, updateStatus, remove as deleteVideo, findFirstByStatus } from '../dao/video.js'
 import { selectByID as selectF2FModelByID } from '../dao/f2f-model.js'
 import { selectByID as selectVoiceByID } from '../dao/voice.js'
@@ -15,6 +15,7 @@ import {
 } from '../dao/video.js'
 import { makeAudio4Video, copyAudio4Video } from './voice.js'
 import { makeVideo as makeVideoApi,getVideoStatus } from '../api/f2f.js'
+import { uploadFile } from '../api/request.js'
 import log from '../logger.js'
 import { getVideoDuration } from '../util/ffmpeg.js'
 
@@ -89,7 +90,7 @@ export async function synthesisVideo(videoId) {
       id: videoId,
       file_path: null,
       status: 'pending',
-      message: '正在提交任务',
+      message: 'Submitting task',
     })
 
     // 查询Video
@@ -258,9 +259,41 @@ function exportVideo(videoId, outputPath) {
  */
 async function makeVideoByF2F(audioPath, videoPath) {
   const uuid = crypto.randomUUID()
+  
+  // 如果启用了远程服务器，先上传文件
+  let remoteAudioPath = audioPath;
+  let remoteVideoPath = videoPath;
+  
+  if (remoteServerConfig.enabled) {
+    try {
+      // 上传音频文件
+      log.debug('Start uploading synthesized audio file to remote server...');
+      const audioResult = await uploadFile(
+        path.join(assetPath.ttsProduct, audioPath), 
+        'tts', 
+        'products'
+      );
+      remoteAudioPath = audioResult.remotePath;
+      log.debug('Audio file uploaded successfully:', remoteAudioPath);
+      
+      // 上传视频文件
+      log.debug('Start uploading template video file to remote server...');
+      const videoResult = await uploadFile(
+        path.join(assetPath.model, videoPath), 
+        'face2face', 
+        'templates'
+      );
+      remoteVideoPath = videoResult.remotePath;
+      log.debug('Template video file uploaded successfully:', remoteVideoPath);
+    } catch (error) {
+      log.error('Failed to upload file:', error);
+      throw new Error(`Failed to upload file: ${error.message}`);
+    }
+  }
+  
   const param = {
-    audio_url: audioPath,
-    video_url: videoPath,
+    audio_url: remoteAudioPath,
+    video_url: remoteVideoPath,
     code: uuid,
     chaofen: 0,
     watermark_switch: 0,
